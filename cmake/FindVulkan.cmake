@@ -1,0 +1,7 @@
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(Vulkan REQUIRED vulkan)
+
+find_package(PackageHandleStandardArgs)
+FIND_PACKAGE_HANDLE_STANDARD_ARGS(Vulkan REQUIRED_VARS Vulkan_LIBRARIES)
+
+mark_as_advanced(Vulkan_INCLUDE_DIRS Vulkan_LIBRARIES)
