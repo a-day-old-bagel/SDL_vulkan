@@ -8,8 +8,10 @@ static SDL_bool SetNames(unsigned* count, const char** names, unsigned inCount, 
     unsigned capacity = *count;
     *count = inCount;
     if (names) {
-        if (capacity < inCount)
+        if (capacity < inCount) {
+            SDL_SetError("Insufficient capacity for extension names: %u < %u", capacity, inCount);
             return SDL_FALSE;
+        }
         for (unsigned i = 0; i < inCount; ++i)
             names[i] = inNames[i];
     }
@@ -18,20 +20,37 @@ static SDL_bool SetNames(unsigned* count, const char** names, unsigned inCount, 
 
 SDL_bool SDL_GetVulkanInstanceExtensions(unsigned* count, const char** names) {
     const char *driver = SDL_GetCurrentVideoDriver();
-    if (!driver) return SDL_FALSE;
-    if (!count) return SDL_FALSE;
+    if (!driver) {
+        SDL_SetError("No video driver - has SDL_Init(SDL_INIT_VIDEO) been called?");
+        return SDL_FALSE;
+    }
+    if (!count) {
+        SDL_SetError("'count' is null");
+        return SDL_FALSE;
+    }
 
     if (!strcmp(driver, "x11")) {
         const char* ext[] = { VK_KHR_XCB_SURFACE_EXTENSION_NAME };
         return SetNames(count, names, 1, ext);
     }
+    SDL_SetError("Unsupported video driver '%s'", driver);
     return SDL_FALSE;
 }
 
 SDL_bool SDL_CreateVulkanSurface(SDL_Window* window, VkInstance instance, VkSurfaceKHR* surface) {
+    if (!window) {
+        SDL_SetError("'window' is null");
+        return SDL_FALSE;
+    }
+    if (instance == VK_NULL_HANDLE) {
+        SDL_SetError("'instance' is null");
+        return SDL_FALSE;
+    }
+
     SDL_SysWMinfo wminfo;
     SDL_VERSION(&wminfo.version);
-    SDL_GetWindowWMInfo(window, &wminfo);
+    if (!SDL_GetWindowWMInfo(window, &wminfo))
+        return SDL_FALSE;
 
     switch (wminfo.subsystem) {
     case SDL_SYSWM_X11:
@@ -43,10 +62,15 @@ SDL_bool SDL_CreateVulkanSurface(SDL_Window* window, VkInstance instance, VkSurf
             createInfo.connection = XGetXCBConnection(wminfo.info.x11.display);
             createInfo.window = wminfo.info.x11.window;
 
-            vkCreateXcbSurfaceKHR(instance, &createInfo, NULL, surface);
+            VkResult r = vkCreateXcbSurfaceKHR(instance, &createInfo, NULL, surface);
+            if (r != VK_SUCCESS) {
+                SDL_SetError("vkCreateXcbSurfaceKHR failed: %i", (int)r);
+                return SDL_FALSE;
+            }
             return SDL_TRUE;
         }
     default:
+        SDL_SetError("Unsupported subsystem %i", (int)wminfo.subsystem);
         return SDL_FALSE;
     }
 }
