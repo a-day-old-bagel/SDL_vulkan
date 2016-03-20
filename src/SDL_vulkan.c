@@ -4,7 +4,7 @@
 #include <SDL_vulkan.h>
 #include <SDL_syswm.h>
 
-SDL_bool SetNames(unsigned* count, const char** names, unsigned inCount, const char* const* inNames) {
+static SDL_bool SetNames(unsigned* count, const char** names, unsigned inCount, const char* const* inNames) {
     unsigned capacity = *count;
     *count = inCount;
     if (names) {
