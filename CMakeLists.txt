@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8.11)
+cmake_minimum_required(VERSION 2.8.7)
 project(SDL_vulkan)
 
 option(DEV_BUILD "Development Build" OFF)
@@ -22,9 +22,9 @@ if(X11_XCB_FOUND)
   include_directories(${X11_XCB_INCLUDE_DIRS})
 endif()
 
-if(DEV_BUILD)
-  include (CheckCCompilerFlag)
+include (CheckCCompilerFlag)
 
+if(DEV_BUILD)
   check_c_compiler_flag(-Wall HAVE_Wall)
   if(HAVE_Wall)
     add_compile_options(-Wall)
@@ -34,6 +34,11 @@ if(DEV_BUILD)
   if(HAVE_Wall)
     add_compile_options(-Werror)
   endif()
+endif()
+
+check_c_compiler_flag(-std=c99 HAVE_C99)
+if(HAVE_C99)
+  add_compile_options(-std=c99)
 endif()
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
