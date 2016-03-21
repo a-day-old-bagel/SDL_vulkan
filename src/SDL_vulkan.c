@@ -1,5 +1,7 @@
+#if HAVE_X11_XCB
 #define VK_USE_PLATFORM_XCB_KHR
 #include <X11/Xlib-xcb.h>
+#endif
 
 #include <SDL_vulkan.h>
 #include <SDL_syswm.h>
@@ -29,10 +31,15 @@ SDL_bool SDL_GetVulkanInstanceExtensions(unsigned* count, const char** names) {
         return SDL_FALSE;
     }
 
+#if HAVE_X11_XCB
     if (!strcmp(driver, "x11")) {
         const char* ext[] = { VK_KHR_XCB_SURFACE_EXTENSION_NAME };
         return SetNames(count, names, 1, ext);
     }
+#endif
+    (void)SetNames;
+    (void)names;
+
     SDL_SetError("Unsupported video driver '%s'", driver);
     return SDL_FALSE;
 }
@@ -53,6 +60,7 @@ SDL_bool SDL_CreateVulkanSurface(SDL_Window* window, VkInstance instance, VkSurf
         return SDL_FALSE;
 
     switch (wminfo.subsystem) {
+#if HAVE_X11_XCB
     case SDL_SYSWM_X11:
         {
             VkXcbSurfaceCreateInfoKHR createInfo;
@@ -69,7 +77,9 @@ SDL_bool SDL_CreateVulkanSurface(SDL_Window* window, VkInstance instance, VkSurf
             }
             return SDL_TRUE;
         }
+#endif
     default:
+        (void)surface;
         SDL_SetError("Unsupported subsystem %i", (int)wminfo.subsystem);
         return SDL_FALSE;
     }

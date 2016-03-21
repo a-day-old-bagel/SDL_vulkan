@@ -11,11 +11,16 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake")
 
 find_package(SDL2 REQUIRED)
 find_package(Vulkan REQUIRED)
-find_package(X11_XCB)
 include_directories(
   ${SDL2_INCLUDE_DIRS}
-  ${Vulkan_INCLUDE_DIRS}
-  ${X11_XCB_INCLUDE_DIRS})
+  ${Vulkan_INCLUDE_DIRS})
+
+find_package(X11_XCB)
+if(X11_XCB_FOUND)
+  add_definitions(-DHAVE_X11_XCB)
+  list(APPEND SUBSYSTEMS [X11])
+  include_directories(${X11_XCB_INCLUDE_DIRS})
+endif()
 
 if(DEV_BUILD)
   include (CheckCCompilerFlag)
@@ -39,3 +44,4 @@ add_subdirectory(examples)
 
 message(STATUS "Build type: " ${CMAKE_BUILD_TYPE})
 message(STATUS "Development mode: " ${DEV_BUILD})
+message(STATUS "Subsystems: " ${SUBSYSTEMS})
