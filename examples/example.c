@@ -26,6 +26,15 @@ void vulkan_main(SDL_Window *window) {
             .ppEnabledExtensionNames = extension_names,
         };
 
+        {
+            unsigned c = 64 - extension_count;
+            if (!SDL_GetVulkanInstanceExtensions(&c, &extension_names[extension_count])) {
+                fprintf(stderr, "SDL_GetVulkanInstanceExtensions failed: %s\n", SDL_GetError());
+                exit(1);
+            }
+            extension_count += c;
+        }
+
         err = vkCreateInstance(&inst_info, NULL, &inst);
         assert(!err);
     }
