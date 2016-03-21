@@ -16,7 +16,7 @@ void vulkan_main(SDL_Window *window) {
         const VkApplicationInfo app = {
             .sType = VK_STRUCTURE_TYPE_APPLICATION_INFO,
             .pApplicationName = "SDL_vulkan example",
-            .apiVersion = VK_API_VERSION,
+            .apiVersion = VK_MAKE_VERSION(1, 0, 3),
         };
 
         VkInstanceCreateInfo inst_info = {
