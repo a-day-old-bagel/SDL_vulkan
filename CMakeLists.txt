@@ -24,22 +24,19 @@ endif()
 
 include (CheckCCompilerFlag)
 
+function(add_checked_flag flag var)
+  check_c_compiler_flag(${flag} HAVE_FLAG_${var})
+  if(HAVE_FLAG_${var})
+    add_compile_options(${flag})
+  endif()
+endfunction()
+
 if(DEV_BUILD)
-  check_c_compiler_flag(-Wall HAVE_Wall)
-  if(HAVE_Wall)
-    add_compile_options(-Wall)
-  endif()
-
-  check_c_compiler_flag(-Werror HAVE_Werror)
-  if(HAVE_Wall)
-    add_compile_options(-Werror)
-  endif()
+  add_checked_flag(-Wall Wall)
+  add_checked_flag(-Werror Werror)
 endif()
 
-check_c_compiler_flag(-std=c99 HAVE_C99)
-if(HAVE_C99)
-  add_compile_options(-std=c99)
-endif()
+add_checked_flag(-std=c99 C99)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 install(DIRECTORY include/ DESTINATION include)
@@ -47,6 +44,12 @@ install(DIRECTORY include/ DESTINATION include)
 add_subdirectory(src)
 add_subdirectory(examples)
 
+if(DEV_BUILD)
+  enable_testing()
+  add_subdirectory(test)
+endif()
+
 message(STATUS "Build type: " ${CMAKE_BUILD_TYPE})
 message(STATUS "Development mode: " ${DEV_BUILD})
 message(STATUS "Subsystems: " ${SUBSYSTEMS})
+

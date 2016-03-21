@@ -15,6 +15,7 @@ script:
   - cd build
   - cmake -DCMAKE_BUILD_TYPE=$CMAKE_BUILD_TYPE -DDEV_BUILD=$DEV_BUILD ..
   - make
+  - ctest --output-on-failure
 env:
   - CMAKE_BUILD_TYPE=Debug DEV_BUILD=ON
   - CMAKE_BUILD_TYPE=Debug DEV_BUILD=OFF
