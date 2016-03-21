@@ -31,7 +31,10 @@ void vulkan_main(SDL_Window *window) {
     }
 
     VkSurfaceKHR surface;
-    SDL_CreateVulkanSurface(window, inst, &surface);
+    if (!SDL_CreateVulkanSurface(window, inst, &surface)) {
+        fprintf(stderr, "SDL_CreateVulkanSurface failed: %s\n", SDL_GetError());
+        exit(1);
+    }
 
     VkPhysicalDevice gpu;
     {
@@ -352,18 +355,14 @@ void vulkan_main(SDL_Window *window) {
     }
 }
 
-void SDL_check(int status) {
-    if (status != 0) {
-        fprintf(stderr, "SDL Error %s", SDL_GetError());
-        exit(1);
-    }
-}
-
 int main(int argc, char* argv[]) {
     (void)argc; (void)argv;
 
     SDL_LogSetPriority(SDL_LOG_CATEGORY_APPLICATION, SDL_LOG_PRIORITY_INFO);
-    SDL_check(SDL_Init(SDL_INIT_VIDEO));
+    if (SDL_Init(SDL_INIT_VIDEO) != 0) {
+        fprintf(stderr, "SDL_Init failed: %s\n", SDL_GetError());
+        return 1;
+    }
     SDL_Window* window = SDL_CreateWindow("Vulkan Example", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 1024, 1024, 0);
 
     vulkan_main(window);
