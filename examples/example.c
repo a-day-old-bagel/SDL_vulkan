@@ -368,6 +368,7 @@ int main(int argc, char* argv[]) {
     (void)argc; (void)argv;
 
     SDL_LogSetPriority(SDL_LOG_CATEGORY_APPLICATION, SDL_LOG_PRIORITY_INFO);
+    SDL_SetHint(SDL_HINT_FRAMEBUFFER_ACCELERATION, "1");
     if (SDL_Init(SDL_INIT_VIDEO) != 0) {
         fprintf(stderr, "SDL_Init failed: %s\n", SDL_GetError());
         return 1;
