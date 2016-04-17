@@ -1,3 +1,5 @@
+#include <string.h>
+
 #if HAVE_X11_XCB
 #define VK_USE_PLATFORM_XCB_KHR
 #include <X11/Xlib-xcb.h>
