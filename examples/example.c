@@ -19,13 +19,6 @@ void vulkan_main(SDL_Window *window) {
             .apiVersion = VK_MAKE_VERSION(1, 0, 3),
         };
 
-        VkInstanceCreateInfo inst_info = {
-            .sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
-            .pApplicationInfo = &app,
-            .enabledExtensionCount = extension_count,
-            .ppEnabledExtensionNames = extension_names,
-        };
-
         {
             unsigned c = 64 - extension_count;
             if (!SDL_GetVulkanInstanceExtensions(&c, &extension_names[extension_count])) {
@@ -34,6 +27,13 @@ void vulkan_main(SDL_Window *window) {
             }
             extension_count += c;
         }
+
+        VkInstanceCreateInfo inst_info = {
+            .sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
+            .pApplicationInfo = &app,
+            .enabledExtensionCount = extension_count,
+            .ppEnabledExtensionNames = extension_names,
+        };
 
         err = vkCreateInstance(&inst_info, NULL, &inst);
         assert(!err);
