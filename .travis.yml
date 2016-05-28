@@ -9,6 +9,7 @@ before_install:
   - curl https://vulkan.lunarg.com/pub/sdks/linux/latest -L -o vulkan.run
   - chmod +x vulkan.run
   - ./vulkan.run
+  - export VULKAN_SDK=$(pwd)/VulkanSDK/*/x86_64
   - cd ..
 script:
   - mkdir build
