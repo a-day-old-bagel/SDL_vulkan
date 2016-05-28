@@ -201,6 +201,8 @@ void vulkan_main(SDL_Window *window) {
 
 
     {
+        err = vkGetSwapchainImagesKHR(device, swapchain, &swapchain_image_count, 0);
+        assert(!err);
         VkImage swapchain_images[swapchain_image_count];
         err = vkGetSwapchainImagesKHR(device, swapchain, &swapchain_image_count, swapchain_images);
         assert(!err);
@@ -284,7 +286,7 @@ void vulkan_main(SDL_Window *window) {
         assert(!err);
     }
 
-    for (uint32_t current_buffer = 0;; current_buffer = (current_buffer + 1) % swapchain_image_count) {
+    for (;;) {
         {
             SDL_Event event;
             SDL_bool done = SDL_FALSE;
@@ -297,6 +299,20 @@ void vulkan_main(SDL_Window *window) {
             }
             if (done) break;
         }
+
+        VkSemaphore present_complete_semaphore;
+        {
+            VkSemaphoreCreateInfo semaphore_create_info = {
+                .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
+            };
+            err = vkCreateSemaphore(device, &semaphore_create_info, NULL, &present_complete_semaphore);
+            assert(!err);
+        }
+
+        uint32_t current_buffer;
+        err = vkAcquireNextImageKHR(device, swapchain, UINT64_MAX, present_complete_semaphore, (VkFence)0, &current_buffer);
+        assert(!err);
+
         const VkCommandBufferBeginInfo cmd_buf_info = {
             .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
         };
@@ -315,6 +331,22 @@ void vulkan_main(SDL_Window *window) {
 
         err = vkBeginCommandBuffer(draw_cmd, &cmd_buf_info);
         assert(!err);
+
+        VkImageMemoryBarrier image_memory_barrier = {
+            .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+            .srcAccessMask = 0,
+            .dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+            .oldLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+            .newLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+            .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+            .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+            .subresourceRange = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 },
+            .image = buffers[current_buffer].image,
+        };
+
+        vkCmdPipelineBarrier(
+            draw_cmd, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+            0, 0, NULL, 0, NULL, 1, &image_memory_barrier);
 
         vkCmdBeginRenderPass(draw_cmd, &rp_begin, VK_SUBPASS_CONTENTS_INLINE);
         vkCmdEndRenderPass(draw_cmd);
@@ -338,10 +370,15 @@ void vulkan_main(SDL_Window *window) {
         err = vkEndCommandBuffer(draw_cmd);
         assert(!err);
 
+        VkPipelineStageFlags pipe_stage_flags = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+
         VkSubmitInfo submit_info = {
             .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
             .commandBufferCount = 1,
             .pCommandBuffers = &draw_cmd,
+            .waitSemaphoreCount = 1,
+            .pWaitSemaphores = &present_complete_semaphore,
+            .pWaitDstStageMask = &pipe_stage_flags,
         };
 
         err = vkQueueSubmit(queue, 1, &submit_info, VK_NULL_HANDLE);
@@ -361,6 +398,8 @@ void vulkan_main(SDL_Window *window) {
 
         err = vkQueueWaitIdle(queue);
         assert(err == VK_SUCCESS);
+
+        vkDestroySemaphore(device, present_complete_semaphore, NULL);
     }
 }
 
