@@ -4,6 +4,47 @@
 #include <SDL_vulkan.h>
 #include <vulkan/vulkan.h>
 
+PFN_vkCreateDebugReportCallbackEXT CreateDebugReportCallback;
+PFN_vkDestroyDebugReportCallbackEXT DestroyDebugReportCallback;
+VkDebugReportCallbackEXT msg_callback;
+PFN_vkDebugReportMessageEXT DebugReportMessage;
+
+VKAPI_ATTR VkBool32 VKAPI_CALL
+dbgFunc(VkFlags msgFlags, VkDebugReportObjectTypeEXT objType,
+        uint64_t srcObject, size_t location, int32_t msgCode,
+        const char *pLayerPrefix, const char *pMsg, void *pUserData) {
+    char *message = (char *)malloc(strlen(pMsg) + 100);
+
+    assert(message);
+
+    if (msgFlags & VK_DEBUG_REPORT_ERROR_BIT_EXT) {
+        sprintf(message, "ERROR: [%s] Code %d : %s", pLayerPrefix, msgCode,
+                pMsg);
+    } else if (msgFlags & VK_DEBUG_REPORT_WARNING_BIT_EXT) {
+        sprintf(message, "WARNING: [%s] Code %d : %s", pLayerPrefix, msgCode,
+                pMsg);
+    } else {
+        return 0;
+    }
+
+#ifdef _WIN32
+    MessageBox(NULL, message, "Alert", MB_OK);
+#else
+    printf("%s\n", message);
+    fflush(stdout);
+#endif
+    free(message);
+
+    /*
+     * false indicates that layer should not bail-out of an
+     * API call that had validation failures. This may mean that the
+     * app dies inside the driver due to invalid parameter(s).
+     * That's what would happen without validation layers, so we'll
+     * keep that behavior here.
+     */
+    return 0;
+}
+
 void vulkan_main(SDL_Window *window) {
     VkResult err;
 
@@ -11,7 +52,11 @@ void vulkan_main(SDL_Window *window) {
     {
         uint32_t extension_count = 0;
         const char *extension_names[64];
+        extension_names[extension_count++] = VK_EXT_DEBUG_REPORT_EXTENSION_NAME;
         extension_names[extension_count++] = VK_KHR_SURFACE_EXTENSION_NAME;
+        uint32_t layer_count = 0;
+        const char *layer_names[64];
+        layer_names[layer_count++] = "VK_LAYER_LUNARG_standard_validation";
 
         const VkApplicationInfo app = {
             .sType = VK_STRUCTURE_TYPE_APPLICATION_INFO,
@@ -33,11 +78,30 @@ void vulkan_main(SDL_Window *window) {
             .pApplicationInfo = &app,
             .enabledExtensionCount = extension_count,
             .ppEnabledExtensionNames = extension_names,
+            .enabledLayerCount = layer_count,
+            .ppEnabledLayerNames = (const char *const *)layer_names,
         };
 
         err = vkCreateInstance(&inst_info, NULL, &inst);
         assert(!err);
     }
+
+    CreateDebugReportCallback =
+        (PFN_vkCreateDebugReportCallbackEXT)vkGetInstanceProcAddr(
+            inst, "vkCreateDebugReportCallbackEXT");
+    DestroyDebugReportCallback =
+        (PFN_vkDestroyDebugReportCallbackEXT)vkGetInstanceProcAddr(
+            inst, "vkDestroyDebugReportCallbackEXT");
+    VkDebugReportCallbackCreateInfoEXT dbgCreateInfo;
+    dbgCreateInfo.sType = VK_STRUCTURE_TYPE_DEBUG_REPORT_CREATE_INFO_EXT;
+    dbgCreateInfo.flags =
+        VK_DEBUG_REPORT_ERROR_BIT_EXT | VK_DEBUG_REPORT_WARNING_BIT_EXT;
+    dbgCreateInfo.pfnCallback = dbgFunc;
+    dbgCreateInfo.pUserData = NULL;
+    dbgCreateInfo.pNext = NULL;
+    err = CreateDebugReportCallback(inst, &dbgCreateInfo, NULL,
+                                          &msg_callback);
+    assert(!err);
 
     VkSurfaceKHR surface;
     if (!SDL_CreateVulkanSurface(window, inst, &surface)) {
@@ -86,8 +150,10 @@ void vulkan_main(SDL_Window *window) {
 
         uint32_t extension_count = 0;
         const char *extension_names[64];
-        extension_count = 0;
         extension_names[extension_count++] = VK_KHR_SWAPCHAIN_EXTENSION_NAME;
+        uint32_t layer_count = 0;
+        const char *layer_names[64];
+        layer_names[layer_count++] = "VK_LAYER_LUNARG_standard_validation";
 
         float queue_priorities[1] = {0.0};
         const VkDeviceQueueCreateInfo queueInfo = {
@@ -102,6 +168,8 @@ void vulkan_main(SDL_Window *window) {
             .pQueueCreateInfos = &queueInfo,
             .enabledExtensionCount = extension_count,
             .ppEnabledExtensionNames = (const char *const *)extension_names,
+            .enabledLayerCount = layer_count,
+            .ppEnabledLayerNames = (const char *const *)layer_names,
         };
 
         err = vkCreateDevice(gpu, &deviceInfo, NULL, &device);
@@ -198,7 +266,6 @@ void vulkan_main(SDL_Window *window) {
         VkImageView view;
         VkFramebuffer fb;
     } buffers[swapchain_image_count];
-
 
     {
         err = vkGetSwapchainImagesKHR(device, swapchain, &swapchain_image_count, 0);
@@ -316,18 +383,6 @@ void vulkan_main(SDL_Window *window) {
         const VkCommandBufferBeginInfo cmd_buf_info = {
             .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
         };
-        const VkClearValue clear_values[1] = {
-            [0] = { .color.float32 = { current_buffer * 1.f, .2f, .2f, .2f } },
-        };
-
-        const VkRenderPassBeginInfo rp_begin = {
-            .sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-            .renderPass = render_pass,
-            .framebuffer = buffers[current_buffer].fb,
-            .renderArea.extent = swapchain_extent,
-            .clearValueCount = 1,
-            .pClearValues = clear_values,
-        };
 
         err = vkBeginCommandBuffer(draw_cmd, &cmd_buf_info);
         assert(!err);
@@ -347,6 +402,19 @@ void vulkan_main(SDL_Window *window) {
         vkCmdPipelineBarrier(
             draw_cmd, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
             0, 0, NULL, 0, NULL, 1, &image_memory_barrier);
+
+        const VkClearValue clear_values[1] = {
+            [0] = { .color.float32 = { current_buffer * 1.f, .2f, .2f, .2f } },
+        };
+
+        const VkRenderPassBeginInfo rp_begin = {
+            .sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+            .renderPass = render_pass,
+            .framebuffer = buffers[current_buffer].fb,
+            .renderArea.extent = swapchain_extent,
+            .clearValueCount = 1,
+            .pClearValues = clear_values,
+        };
 
         vkCmdBeginRenderPass(draw_cmd, &rp_begin, VK_SUBPASS_CONTENTS_INLINE);
         vkCmdEndRenderPass(draw_cmd);
