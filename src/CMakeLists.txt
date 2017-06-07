@@ -1,6 +1,6 @@
 
 if(NOT WIN32)
-  add_checked_flag(-fPIC)
+  add_checked_flag(-fPIC fPIC)
 endif()
 
 add_library(SDL_vulkan SHARED SDL_vulkan.c)
