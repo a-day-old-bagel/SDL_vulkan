@@ -7,11 +7,12 @@ set(VERSION_MAJOR 0)
 set(VERSION_MINOR 0)
 set(VERSION_PATCH 0)
 
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+# only applies to this and child scopes; better to overwrite
+set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 find_package(SDL2 REQUIRED)
 find_package(Vulkan REQUIRED)
-include_directories(
+include_directories( SYSTEM
   ${SDL2_INCLUDE_DIRS}
   ${VULKAN_INCLUDE_DIR})
 
@@ -19,7 +20,7 @@ find_package(X11_XCB)
 if(X11_XCB_FOUND)
   add_definitions(-DHAVE_X11_XCB)
   list(APPEND SUBSYSTEMS [X11])
-  include_directories(${X11_XCB_INCLUDE_DIRS})
+  include_directories(SYSTEM ${X11_XCB_INCLUDE_DIRS})
 endif()
 
 include (CheckCCompilerFlag)
