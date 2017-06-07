@@ -9,6 +9,7 @@
 #include <Windows.h>
 #endif
 
+#define sldvk_EXPORT_MODE
 #include <SDL_vulkan.h>
 #include <SDL_syswm.h>
 
