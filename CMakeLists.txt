@@ -10,6 +10,14 @@ set(VERSION_PATCH 0)
 # only applies to this and child scopes; better to overwrite
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
+# gives a hint to the user to set environment variables in Windows to find libs
+if ( WIN32 )
+  if ( (("$ENV{VULKAN_SDK}" STREQUAL "") OR ("$ENV{VK_SDK_PATH}" STREQUAL "")) OR ("$ENV{SDL2}" STREQUAL "") )
+    message( WARNING "On Windows, in order to find SDL2 and Vulkan libs on your system, it may be necessary to set the \
+             environment variables 'SDL2' and 'VULKAN_SDK' to point to their respective install locations." )
+  endif ()
+endif ( WIN32 )
+
 find_package(SDL2 REQUIRED)
 find_package(Vulkan REQUIRED)
 include_directories( SYSTEM
