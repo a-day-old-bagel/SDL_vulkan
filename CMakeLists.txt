@@ -22,7 +22,7 @@ find_package(SDL2 REQUIRED)
 find_package(Vulkan REQUIRED)
 include_directories( SYSTEM
   ${SDL2_INCLUDE_DIR}
-  ${VULKAN_INCLUDE_DIR})
+  ${Vulkan_INCLUDE_DIR})
 
 find_package(X11_XCB)
 if(X11_XCB_FOUND)
