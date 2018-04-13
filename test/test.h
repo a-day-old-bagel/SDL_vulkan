@@ -1,5 +1,5 @@
 #include <SDL.h>
-#include <SDL_vulkan.h>
+#include <SDLvulkan.h>
 #include <string.h>
 
 #define EXPECT(a, b, t) if (!COMP_##t(a, b)) { \
