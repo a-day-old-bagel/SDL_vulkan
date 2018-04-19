@@ -51,9 +51,9 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 install(DIRECTORY include/ DESTINATION include)
 
 add_subdirectory(src)
-add_subdirectory(examples)
 
 if(DEV_BUILD)
+  add_subdirectory(examples)
   enable_testing()
   add_subdirectory(test)
 endif()
