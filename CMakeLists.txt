@@ -18,7 +18,11 @@ if ( WIN32 )
   endif ()
 endif ( WIN32 )
 
-find_package(SDL2 REQUIRED)
+find_package(SDL2)
+if(NOT SDL2_FOUND)
+  include(cmake/helpers.cmake)
+  sdl2_debug_env()
+endif()
 find_package(Vulkan REQUIRED)
 include_directories( SYSTEM
   ${SDL2_INCLUDE_DIR}
