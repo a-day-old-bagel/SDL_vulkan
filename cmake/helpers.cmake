@@ -30,28 +30,28 @@ endfunction()
 # extern( define <defs> )  to add compiler definitions
 # extern( finish )         to combine all external dependencies into a single interface target for other targets to use.
 # Only use the finish action once you're done calling any of the others, and you must use it for any of this to work.
-# Link to ${TARGET_PREFIX}interface from other targets to access all external dependencies.
+# Link to ${TARGET_PREFIX}_interface from other targets to access all external dependencies.
 function( extern )
   set( args ${ARGN} )
   list( LENGTH args num_args )
   if ( ${num_args} GREATER 0 )
     list( GET args 0 action )
     if ( action STREQUAL "finish" )
-      add_library( ${TARGET_PREFIX}interface INTERFACE )
-      target_include_directories( ${TARGET_PREFIX}interface INTERFACE SYSTEM
-        ${${TARGET_PREFIX}include}
+      add_library( ${TARGET_PREFIX}_interface INTERFACE )
+      target_include_directories( ${TARGET_PREFIX}_interface INTERFACE SYSTEM
+        ${${TARGET_PREFIX}_include}
         )
-      target_link_libraries( ${TARGET_PREFIX}interface INTERFACE
-        ${${TARGET_PREFIX}link}
+      target_link_libraries( ${TARGET_PREFIX}_interface INTERFACE
+        ${${TARGET_PREFIX}_link}
         )
-      target_compile_definitions( ${TARGET_PREFIX}interface INTERFACE
-        ${${TARGET_PREFIX}define}
+      target_compile_definitions( ${TARGET_PREFIX}_interface INTERFACE
+        ${${TARGET_PREFIX}_define}
         )
-      message( STATUS "EXTERN: ${action}: ${TARGET_PREFIX}interface combines all external dependencies." )
+      message( STATUS "EXTERN: ${action}: ${TARGET_PREFIX}_interface combines all external dependencies." )
     elseif ( action STREQUAL "include" OR action STREQUAL "link" OR action STREQUAL "define" )
       if ( ${num_args} GREATER 1 )
         list( SUBLIST args 1 -1 inputs )
-        set( ${TARGET_PREFIX}${action} ${${TARGET_PREFIX}${action}} ${inputs} PARENT_SCOPE )
+        set( ${TARGET_PREFIX}_${action} ${${TARGET_PREFIX}_${action}} ${inputs} PARENT_SCOPE )
         message( STATUS "EXTERN: ${action} ${inputs}" )
       else ()
         message( STATUS "EXTERN: ${action} (action received no inputs)" )
